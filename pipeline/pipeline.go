@@ -1,4 +1,4 @@
-package tflux
+package pipeline
 
 import (
 	"github.com/google/uuid"

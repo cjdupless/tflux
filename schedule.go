@@ -26,10 +26,6 @@ func checkTimeScaleValue(value TimeScale) error {
 	}
 }
 
-type Schedule interface {
-	GetNextEvent() time.Time
-}
-
 // ---------------- RANDOM SCHEDULE ----------------------
 
 type RandomSchedule struct {

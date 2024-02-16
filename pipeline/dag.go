@@ -1,30 +1,31 @@
-package tflux
+package pipeline
 
 import (
 	"fmt"
 	"slices"
+	flx "github.com/cjdupless/tflux"
 )
 
-type taskGraph struct {
-	taskRefList map[*Task]bool
-	root *Task
+type dag struct {
+	taskRefList map[*flx.Executable]bool
+	root *flx.Executable
 }
 
-func (tg *taskGraph) String() string {
+func (d *dag) String() string {
 	return fmt.Sprintf(
-		"%v\n %v\n", tg.taskRefList, tg.root,
+		"%v\n %v\n", d.taskRefList, d.root,
 	)
 }
 
-func newGraph() *taskGraph {
-	tg := taskGraph{}
-	tg.taskRefList = make(map[*Task]bool)
+func newGraph() *dag {
+	tg := dag{}
+	tg.taskRefList = make(map[*flx.Executable]bool)
 	return &tg
 }
 
-func (tg *taskGraph) causesCycle(newNode *Task) bool {
-	var isCyclic func(*Task) bool
-	isCyclic = func(node *Task) bool {
+func (tg *dag) causesCycle(newNode *flx.Executable) bool {
+	var isCyclic func(*flx.Executable) bool
+	isCyclic = func(node *flx.Executable) bool {
 		result := false
 		for upsNode := range node.upstream {
 			if upsNode == newNode {
@@ -40,7 +41,7 @@ func (tg *taskGraph) causesCycle(newNode *Task) bool {
 	return isCyclic(newNode)
 }
 
-func (tg *taskGraph) removeLink(usTask, dsTask *Task) {
+func (tg *dag) removeLink(usTask, dsTask *flx.Executable) {
 	delIndex := slices.Index(usTask.downstream, dsTask)
 	usTask.downstream = append(
 		usTask.downstream[0: delIndex],
@@ -49,12 +50,12 @@ func (tg *taskGraph) removeLink(usTask, dsTask *Task) {
 	delete(dsTask.upstream, usTask)
 }
 
-func (tg *taskGraph) addLink(usTask, dsTask *Task) {
+func (tg *dag) addLink(usTask, dsTask *flx.Executable) {
 	usTask.addDownstream(dsTask)
 	dsTask.addUpstream(usTask)
 }
 
-func (tg *taskGraph) addTask(usTask, dsTask *Task) error {
+func (tg *dag) addTask(usTask, dsTask *flx.Executable) error {
 	if !tg.taskRefList[usTask] {
 		return fmt.Errorf("task %v does not exist", *usTask)
 	}
