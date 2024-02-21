@@ -47,33 +47,6 @@ func (pl *Pipeline) buildExecutionStages() ([][]*Task, int) {
 	return stages, numTasks
 }
 
-func (pl *Pipeline) ExecStagesFunc() (NextTask func() *Task) {
-	stages, numTasks := pl.buildExecutionStages()
-	checkList := make([]*Task, 0)
-	
-	NextTask = func() *Task {
-		if len(checkList) == numTasks {
-			return nil
-		} 
-		for _, stage := range stages { 
-			for _, task := range stage {
-				if slices.Contains(checkList, task) {
-					continue
-				}
-				if task.done() {
-					checkList = append(checkList, task)
-					continue
-				}
-				if task.canRun() {
-					return task
-				}
-			}
-		}
-	}
-	return
-}
-
-
 func (pl *Pipeline) AddTask(upstream, task *Task) error {
 	err := pl.taskDAG.addTask(upstream, task)
 	if err != nil {
