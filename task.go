@@ -2,18 +2,17 @@ package tflux
 
 import (
 	"fmt"
-	"sync"
 	"github.com/google/uuid"
 )
 
-type linkDirection bool
+type linkDirection uint8
 
 const (
-	down = false
-	up   = true
+	down = iota
+	up
 )
 
-type TaskResult struct {
+type OpResult struct {
 	Info  string
 	Error error
 }
@@ -21,16 +20,19 @@ type TaskResult struct {
 type Task struct {
 	id         string
 	status     Status
-	function   func() TaskResult
+	name       string
+	function   func() OpResult
 	upstream   []*Task
 	downstream []*Task
 }
 
-func NewTask() *Task {
+func NewTask(name string, function func() OpResult) *Task {
 	t := Task{
 		upstream:   make([]*Task, 0),
 		downstream: make([]*Task, 0),
 	}
+	t.name = name
+	t.function = function
 	t.status = NoneStatus
 	t.id = uuid.New().String()
 	return &t
@@ -59,26 +61,28 @@ func (t *Task) canRun() bool {
 }
 
 func (t *Task) done() bool {
-	return (
-		t.status == FailedStatus || 
-		t.status == UpFailedStatus || 
+	return (t.status == FailedStatus ||
+		t.status == UpFailedStatus ||
 		t.status == SuccessStatus)
 }
 
 func (t *Task) Run() {
 	result := t.function()
 	if result.Error != nil {
-		// Do some logging.
 		t.SetStatus(FailedStatus)
 		return
 	}
-	t.status = SuccessStatus
+	t.SetStatus(SuccessStatus)
 }
 
 func (t *Task) Clone() *Task {
-	clone := NewTask()
-	clone.function = t.function
-	return clone
+	clone := Task{
+		name: t.name,
+		function: t.function,
+		upstream: make([]*Task, len(t.upstream)),
+		downstream: make([]*Task, len(t.downstream)),
+	}
+	return &clone
 }
 
 func (t *Task) String() string {
