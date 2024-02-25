@@ -4,16 +4,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// PRQueue is the Pipeline Run Queue specific to each pipeline
-type PRQueue struct {
+// prQueue is the Pipeline Run Queue specific to each pipeline
+type prQueue struct {
 	// mx sync.Mutex
 	runID string
 	taskList []*Task
 	executionStages [][]*Task
 }
 
-func NewPRQ(dagRoot *Task, taskList []*Task) *PRQueue {
-	prq := PRQueue{}
+func NewPRQ(dagRoot *Task, taskList []*Task) *prQueue {
+	prq := prQueue{}
 	prq.runID = uuid.New().String()
 	prq.taskList = make([]*Task, len(taskList))
 	copy(prq.taskList, taskList)
@@ -21,7 +21,7 @@ func NewPRQ(dagRoot *Task, taskList []*Task) *PRQueue {
 	return &prq
 }
 
-func (prq *PRQueue) setExecutionStages(dagRoot *Task) {
+func (prq *prQueue) setExecutionStages(dagRoot *Task) {
 	prq.executionStages = make([][]*Task, 0)
 
 	getDownstream := func(tasks []*Task) (nextTasks []*Task) {
@@ -47,7 +47,7 @@ func (prq *PRQueue) setExecutionStages(dagRoot *Task) {
 	}
 }
 
-func (prq *PRQueue) Done() bool {
+func (prq *prQueue) Done() bool {
 	count := 0
 	for _, task := range prq.taskList {
 		if task.done() {
@@ -57,7 +57,7 @@ func (prq *PRQueue) Done() bool {
 	return count == len(prq.taskList)
 }
 
-func (prq *PRQueue) Next() *Task {
+func (prq *prQueue) Next() *Task {
 	for _, stage := range prq.executionStages {
 		for _, task := range stage {
 			if task.done() {

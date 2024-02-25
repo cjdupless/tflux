@@ -1,14 +1,14 @@
 package tflux
 
-type LinkingTask struct {
+type linkingTask struct {
 	dag  *dag
 	task *Task
 }
 
-func (lt *LinkingTask) GoTo(thisTask *Task) *LinkingTask {
+func (lt *linkingTask) GoTo(thisTask *Task) *linkingTask {
 	err := lt.dag.tryAddLink(lt.task, thisTask)
 	if err != nil {
 		panic(err)
 	}
-	return &LinkingTask{lt.dag, thisTask}
+	return &linkingTask{lt.dag, thisTask}
 }
