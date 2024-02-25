@@ -67,12 +67,19 @@ func (t *Task) done() bool {
 }
 
 func (t *Task) Run() {
+	defer func() {
+		err := recover()
+		if err != nil {
+			t.SetStatus(FailedStatus)
+		}
+	}()
+
 	result := t.function()
 	if result.Error != nil {
 		t.SetStatus(FailedStatus)
-		return
+	} else {
+		t.SetStatus(SuccessStatus)
 	}
-	t.SetStatus(SuccessStatus)
 }
 
 func (t *Task) Clone() *Task {

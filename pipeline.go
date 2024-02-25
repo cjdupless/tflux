@@ -21,7 +21,7 @@ func (pl *Pipeline) String() string {
 	return fmt.Sprintf("%v", pl.taskDAG.root)
 }
 
-func (pl *Pipeline) Queue() *PRQueue {
+func (pl *Pipeline) Queue() *prQueue {
 	root, taskList := pl.cloneTasks()
 	queue := NewPRQ(root, taskList)
 	return queue
@@ -61,12 +61,12 @@ func (pl *Pipeline) AddStart(task *Task) error {
 	return nil
 }
 
-func (pl *Pipeline) From(task *Task) *LinkingTask {
+func (pl *Pipeline) From(task *Task) *linkingTask {
 	if task == nil {
 		panic("task cannot be nil")
 	}
 	if pl.taskDAG.root == nil {
 		pl.taskDAG.addStart(task)
 	}
-	return &LinkingTask{pl.taskDAG, task}
+	return &linkingTask{pl.taskDAG, task}
 }
