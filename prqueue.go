@@ -1,28 +1,23 @@
 package tflux
 
 import (
-	"github.com/google/uuid"
+	"fmt"
 )
 
-// prQueue is the Pipeline Run Queue specific to each pipeline
-type prQueue struct {
-	// mx sync.Mutex
-	runID string
-	taskList []*Task
-	executionStages [][]*Task
+// PRQueue is the Pipeline Run Queue specific to each pipeline
+type PRQueue struct {
+	tasksDone []*Task
+	taskQueue []*Task
 }
 
-func NewPRQ(dagRoot *Task, taskList []*Task) *prQueue {
-	prq := prQueue{}
-	prq.runID = uuid.New().String()
-	prq.taskList = make([]*Task, len(taskList))
-	copy(prq.taskList, taskList)
-	prq.setExecutionStages(dagRoot)
+func NewPRQ(dagRoot *Task) *PRQueue {
+	prq := PRQueue{}
+	prq.buildQueue(dagRoot)
 	return &prq
 }
 
-func (prq *prQueue) setExecutionStages(dagRoot *Task) {
-	prq.executionStages = make([][]*Task, 0)
+func (prq *PRQueue) buildQueue(dagRoot *Task) {
+	prq.taskQueue = make([]*Task, 0)
 
 	getDownstream := func(tasks []*Task) (nextTasks []*Task) {
 		nextTasks = make([]*Task, 0)
@@ -36,37 +31,58 @@ func (prq *prQueue) setExecutionStages(dagRoot *Task) {
 	}
 
 	upstream := []*Task{dagRoot}
-	prq.executionStages = append(prq.executionStages, upstream)
+	prq.taskQueue = append(prq.taskQueue, upstream...)
 	for {
 		downstream := getDownstream(upstream)
 		if len(downstream) == 0 {
 			break
 		}
-		prq.executionStages = append(prq.executionStages, downstream)
+		prq.taskQueue = append(prq.taskQueue, downstream...)
 		upstream = downstream
 	}
 }
 
-func (prq *prQueue) Done() bool {
-	count := 0
-	for _, task := range prq.taskList {
+func (prq *PRQueue) cleanup() {
+	delIndices := make([]int, 0)
+	for index, task := range prq.taskQueue {
 		if task.done() {
-			count++
+			delIndices = append(delIndices, index)
 		}
 	}
-	return count == len(prq.taskList)
+	for i, di := range delIndices {
+		// Everytime you remove an item the next index to 
+		shiftedDI := di - i // delete shifts i positions to the left  
+		prq.tasksDone = append(prq.tasksDone, prq.taskQueue[shiftedDI])
+		prq.taskQueue = append(
+			prq.taskQueue[0:shiftedDI],
+			prq.taskQueue[shiftedDI+1:]...
+		)
+	}
 }
 
-func (prq *prQueue) Next() *Task {
-	for _, stage := range prq.executionStages {
-		for _, task := range stage {
-			if task.done() {
-				continue
+func (prq *PRQueue) stillAlive() *Task {
+	return NewTask(
+		"STILL_ALIVE",
+		func() OpResult {
+			fmt.Println("...")
+			return OpResult{
+				Error: nil,
 			}
-			if task.canRun() {
-				return task
-			}
+		},
+	)
+}
+
+func (prq *PRQueue) Next() *Task {
+	prq.cleanup()
+
+	if len(prq.taskQueue) == 0 {
+		return nil
+	}
+
+	for _, task := range prq.taskQueue {
+		if task.canRun() {
+			return task
 		}
 	}
-	return nil
+	return prq.stillAlive()
 }

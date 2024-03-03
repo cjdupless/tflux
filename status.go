@@ -6,7 +6,6 @@ type Status uint
 
 const (
 	NoneStatus = iota
-	UpQueuedStatus
 	QueuedStatus
 	ExecutingStatus
 	SuccessStatus
@@ -18,8 +17,6 @@ func (s Status) String() string {
 	switch s {
 	case NoneStatus:
 		return "Status: None"
-	case UpQueuedStatus:
-		return "Status: Upstream Queued"
 	case QueuedStatus:
 		return "Status: Queued"
 	case ExecutingStatus:

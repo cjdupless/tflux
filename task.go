@@ -48,7 +48,7 @@ func (t *Task) SetStatus(status Status) {
 }
 
 func (t *Task) canRun() bool {
-	if t.status == UpFailedStatus {
+	if t.status > NoneStatus {
 		return false
 	}
 	successCount := 0
@@ -66,7 +66,7 @@ func (t *Task) done() bool {
 		t.status == SuccessStatus)
 }
 
-func (t *Task) Run() {
+func (t *Task) run() {	
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -80,6 +80,11 @@ func (t *Task) Run() {
 	} else {
 		t.SetStatus(SuccessStatus)
 	}
+}
+
+func (t *Task) Run() {
+	t.status = ExecutingStatus
+	go t.run()
 }
 
 func (t *Task) Clone() *Task {

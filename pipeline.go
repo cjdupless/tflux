@@ -21,18 +21,16 @@ func (pl *Pipeline) String() string {
 	return fmt.Sprintf("%v", pl.taskDAG.root)
 }
 
-func (pl *Pipeline) Queue() *prQueue {
-	root, taskList := pl.cloneTasks()
-	queue := NewPRQ(root, taskList)
+func (pl *Pipeline) Queue() *PRQueue {
+	root:= pl.cloneTasks()
+	queue := NewPRQ(root)
 	return queue
 }
 
-func (pl *Pipeline) cloneTasks() (*Task, []*Task) {
-	clones := make([]*Task, 0)
+func (pl *Pipeline) cloneTasks() *Task {
 	cloneMap := make(map[*Task]*Task)
 	for task := range pl.taskDAG.taskRefList {
 		cloneMap[task] = task.Clone()
-		clones = append(clones, cloneMap[task])
 	}
 	for task := range pl.taskDAG.taskRefList {
 		for i, utask := range task.upstream {
@@ -42,7 +40,7 @@ func (pl *Pipeline) cloneTasks() (*Task, []*Task) {
 			cloneMap[task].downstream[i] = cloneMap[dtask]
 		}
 	}
-	return cloneMap[pl.taskDAG.root], clones
+	return cloneMap[pl.taskDAG.root]
 }
 
 func (pl *Pipeline) AddLink(upstream, task *Task) error {
