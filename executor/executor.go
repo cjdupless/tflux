@@ -1,7 +1,6 @@
 /*
 	This package serves as the singleton executor that will execute pipelines' PRQueues assigned to it.
 */
-
 package executor
 
 import (
@@ -20,6 +19,7 @@ func init() {
 			queue = make(chan *tflux.Task)
 		},
 	)
+	go processQueue()
 }
 
 func processQueue() {
@@ -39,5 +39,4 @@ func Assign(prq *tflux.PRQueue) {
 			queue <- task
 		}
 	}()
-	processQueue()
 }
